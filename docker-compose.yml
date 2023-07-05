@@ -1,0 +1,29 @@
+version: "3.8"
+services:
+  mongo:
+    container_name: mongo-product-tracking-container
+    image: mongo:3
+    restart: always
+    volumes:
+      - ./data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - produc-tracking-network
+  admin-container:
+    build:
+      dockerfile: Dockerfile
+      context: .
+      target: development
+    volumes:
+      - '.:/app'
+    ports:
+      - '3000:3000'
+    command: npm run start:dev
+    depends_on: 
+      - mongo
+    networks:
+      - produc-tracking-network
+networks:
+  produc-tracking-network:
+    driver: bridge
