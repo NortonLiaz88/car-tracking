@@ -1,4 +1,12 @@
-import { Controller, Get, Post, Body, Param, Headers } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Headers,
+  HttpCode,
+} from '@nestjs/common';
 import { CreateCarTransactionDto } from './dto/create-car-transaction.dto';
 import { BlockChain } from 'src/core/entities/blockchain';
 import { Block } from 'src/core/entities/block';
@@ -8,11 +16,11 @@ import { BlockService } from 'src/core/services/block.service';
 import { ApiBasicAuth, ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from 'src/users/users.service';
-
+@ApiBearerAuth()
 @ApiTags('car')
 @Controller('car-transactions')
 export class CarTransactionsController {
-  carChain = new BlockChain({ difficulty: 5, blocks: [] });
+  carChain = new BlockChain({ difficulty: 5 });
   encrypt = new Encrypt({
     encryptionMethod: process.env.ECNRYPTION_METHOD,
     secretInitialVector: process.env.INIT_VECTOR_KEY,
@@ -49,6 +57,7 @@ export class CarTransactionsController {
   }
 
   @Get()
+  @HttpCode(200)
   async findAll() {
     const blocks = await this.blockService.findAll();
     this.carChain = new BlockChain({ difficulty: 4, blocks: [] });
@@ -56,21 +65,21 @@ export class CarTransactionsController {
       const newBlock = new Block({
         index: this.carChain.latestBlock().props.index + 1,
         data: ele.data.toString(),
+        nonce: ele.nonce,
       });
+      console.log('BLOCK', newBlock);
       this.carChain.addNewBlock(newBlock);
-      console.log('==>', this.encrypt.decryptData(ele.data));
       return JSON.parse(this.encrypt.decryptData(ele.data));
     });
-    console.log('CAR CHAIN', JSON.stringify(this.carChain));
     return decipherData;
   }
 
   @Get('validate')
   async validate() {
+    this.carChain = new BlockChain({ difficulty: 4 });
     const isValid = this.carChain.isBlockChainValid();
     return { isValid };
   }
-
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {

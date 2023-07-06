@@ -7,8 +7,11 @@ interface BlockChainProperties {
 
 export class BlockChain {
   constructor(public readonly props: BlockChainProperties) {
+    this.props.blocks = this.props.blocks ?? [];
     const genesisBlock = this.startGenesisBlock();
     this.props.blocks.push(genesisBlock);
+    const validation = this.isFirstBlockValid();
+    console.log('VALIDATION', validation);
   }
 
   public startGenesisBlock(): Block {
@@ -30,10 +33,12 @@ export class BlockChain {
     const firstBlock: Block = this.props.blocks[0];
 
     if (firstBlock.props.index != 0) {
+      console.log('INDEX NOT 0');
       return false;
     }
 
     if (firstBlock.props.previousHash != null) {
+      console.log('PREVIOUS HASH NOT NULL');
       return false;
     }
 
@@ -41,6 +46,7 @@ export class BlockChain {
       firstBlock.props.hash == null ||
       !(Block.calculateHash(firstBlock) === firstBlock.props.hash)
     ) {
+      console.log('HASH NULL', Block.calculateHash(firstBlock), firstBlock);
       return false;
     }
 
@@ -75,6 +81,7 @@ export class BlockChain {
 
   public isBlockChainValid(): boolean {
     if (!this.isFirstBlockValid()) {
+      console.log('INVALID FIRST BLOCK');
       return false;
     }
 

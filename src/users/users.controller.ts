@@ -22,6 +22,7 @@ import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { Public } from 'src/auth/auth.guard';
 import { CreateUserResponseDto } from './dto/create-response.dto';
+import { ApiErrorDecorator } from 'src/errors/decorators/error.decorator';
 
 @ApiTags('users')
 @Controller('users')
@@ -38,10 +39,8 @@ export class UsersController {
     description: 'User created successful',
     schema: { $ref: getSchemaPath(CreateUserResponseDto) },
   })
-  @ApiBadRequestResponse({
-    description: 'User data pattern not was expected',
-    schema: { $ref: getSchemaPath(BadRequestException) },
-  })
+  @ApiErrorDecorator(HttpStatus.BAD_REQUEST, 'Bad Request')
+  @ApiErrorDecorator(HttpStatus.INTERNAL_SERVER_ERROR, 'Internal Server')
   async create(@Body() createWaterDto: CreateUserDto) {
     try {
       this.logger.log(`data: ${JSON.stringify(createWaterDto)}`);
@@ -58,15 +57,13 @@ export class UsersController {
   @ApiExtraModels(CreateUserResponseDto, NotFoundException)
   @HttpCode(200)
   @ApiResponse({
-    status: 201,
+    status: 200,
     description: 'Users list request successful',
     isArray: true,
     type: CreateUserResponseDto,
   })
-  @ApiBadRequestResponse({
-    description: 'Users not found',
-    type: NotFoundException,
-  })
+  @ApiErrorDecorator(HttpStatus.BAD_REQUEST, 'Bad Request')
+  @ApiErrorDecorator(HttpStatus.INTERNAL_SERVER_ERROR, 'Internal Server')
   async findAll() {
     try {
       this.logger.log(`load all users`);

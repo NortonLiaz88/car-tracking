@@ -28,7 +28,7 @@ export class Block {
   }
 
   public static calculateHash(block: Block) {
-    if (!block?.props?.hash) {
+    if (!block?.props?.hash !== null) {
       const hash = createHash('sha256');
       const txt = block.str();
       hash.update(txt);

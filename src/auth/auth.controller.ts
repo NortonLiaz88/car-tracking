@@ -1,15 +1,25 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, HttpStatus, Post, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 
 import { LoginDto } from './dto/login.dto';
 import { AuthService } from './auth.service';
 
 import { SetMetadata } from '@nestjs/common';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiExtraModels,
+  ApiResponse,
+  ApiTags,
+  ApiUnauthorizedResponse,
+  getSchemaPath,
+} from '@nestjs/swagger';
+import { LoginResponseDto } from './dto/login-response.dto';
+import { ErrorDTO } from 'src/errors/dto/error.dto';
+import { ApiErrorDecorator } from 'src/errors/decorators/error.decorator';
 
 export const IS_PUBLIC_KEY = 'isPublic';
 export const Public = () => SetMetadata(IS_PUBLIC_KEY, true);
 
+@ApiExtraModels(LoginResponseDto, UnauthorizedException)
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -20,6 +30,13 @@ export class AuthController {
 
   @Public()
   @Post('login')
+  @ApiResponse({
+    status: 201,
+    description: 'User created successful',
+    schema: { $ref: getSchemaPath(LoginResponseDto) },
+  })
+  @ApiErrorDecorator(HttpStatus.BAD_REQUEST, 'Bad Request')
+  @ApiErrorDecorator(HttpStatus.INTERNAL_SERVER_ERROR, 'Internal Server')
   async login(@Body() body: LoginDto) {
     try {
       const userValidation = await this.authService.validateUserCredentials(
@@ -34,7 +51,7 @@ export class AuthController {
         email: userValidation['email'],
       };
       return {
-        access_token: await this.jwtService.signAsync(payload, {
+        accessToken: await this.jwtService.signAsync(payload, {
           secret: `${process.env.SECRET_KEY}`,
         }),
       };
