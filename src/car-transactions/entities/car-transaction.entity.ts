@@ -1,4 +1,5 @@
 export class CarTransaction {
+  carRef: string;
   power?: {
     engine: number;
     hp: number;

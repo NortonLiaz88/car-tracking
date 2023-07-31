@@ -1,25 +1,26 @@
 import {
   Controller,
-  Get,
   Post,
   Body,
+  Get,
+  HttpCode,
   Param,
   Headers,
-  HttpCode,
 } from '@nestjs/common';
-import { CreateCarTransactionDto } from './dto/create-car-transaction.dto';
-import { BlockChain } from 'src/core/entities/blockchain';
-import { Block } from 'src/core/entities/block';
-import { Encrypt } from 'src/core/entities/encrypt';
-import { Public } from 'src/auth/auth.controller';
-import { BlockService } from 'src/core/services/block.service';
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtService } from '@nestjs/jwt';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Public } from 'src/auth/auth.controller';
+import { Block } from 'src/core/entities/block';
+import { BlockChain } from 'src/core/entities/blockchain';
+import { Encrypt } from 'src/core/entities/encrypt';
+import { BlockService } from 'src/core/services/block.service';
 import { UsersService } from 'src/users/users.service';
+import { CreateCarDto } from './dto/create-car.dto';
+
 @ApiBearerAuth()
-@ApiTags('car-transactions')
-@Controller('car-transactions')
-export class CarTransactionsController {
+@ApiTags('car')
+@Controller('car')
+export class CarsController {
   carChain = new BlockChain({ difficulty: 5 });
   encrypt = new Encrypt({
     encryptionMethod: process.env.ECNRYPTION_METHOD,
@@ -34,7 +35,7 @@ export class CarTransactionsController {
 
   @Post()
   async create(
-    @Body() createCarTransactionDto: CreateCarTransactionDto,
+    @Body() createCarDto: CreateCarDto,
     @Headers('Authorization') auth: string,
   ) {
     const [, token] = auth?.split(' ') ?? [];
@@ -43,9 +44,9 @@ export class CarTransactionsController {
     });
     const user = await this.userService.findOne(payload.email);
 
-    const currentData = Object.assign({}, createCarTransactionDto, {
+    const currentData = Object.assign({}, createCarDto, {
       userRef: user._id,
-      type: 'TRANSACTION',
+      type: 'ASSET',
     });
     const encryptedData = this.encrypt.encryptData(currentData);
     const newBlock = new Block({
@@ -57,13 +58,12 @@ export class CarTransactionsController {
     return newBlock;
   }
 
-  @Get(':id')
+  @Get()
   @HttpCode(200)
-  async findAll(
-    @Param('id') id: string,
-    @Headers('Authorization') auth: string,
-  ) {
+  async findAll(@Headers('Authorization') auth: string) {
+    console.log('MY CAR');
     const [, token] = auth?.split(' ') ?? [];
+
     const payload = await this.jwtService.verifyAsync(token, {
       secret: `${process.env.SECRET_KEY}`,
     });
@@ -71,21 +71,32 @@ export class CarTransactionsController {
 
     const blocks = await this.blockService.findAll();
     this.carChain = new BlockChain({ difficulty: 4, blocks: [] });
+
     const decipherData = blocks.map((ele) => {
       const newBlock = new Block({
         index: this.carChain.latestBlock().props.index + 1,
         data: ele.data.toString(),
         nonce: ele.nonce,
+        ref: ele.id,
       });
       console.log('BLOCK', newBlock);
       this.carChain.addNewBlock(newBlock);
-      return JSON.parse(this.encrypt.decryptData(ele.data));
+      const decrypt = JSON.parse(this.encrypt.decryptData(ele.data));
+      console.log('DECRYPT', decrypt, JSON.stringify(ele._id));
+      const currentData = Object.assign({}, decrypt, {
+        id: ele._id.toString(),
+      });
+      return currentData;
     });
-    const assets = decipherData.filter((ele) => ele.type === 'TRANSACTION');
 
-    console.log('CAR ==>', decipherData);
-    const carsTransactions = assets.filter((ele) => ele.carRef == id);
-    return carsTransactions;
+    const assets = decipherData.filter((ele) => ele.type === 'ASSET');
+
+    console.log('DECYPHER DATA', decipherData);
+    const userCars = assets.filter((ele) => {
+      if (ele.userRef == user._id) return ele;
+    });
+    console.log('USER CARS', userCars);
+    return userCars;
   }
 
   @Get('validate')
@@ -93,10 +104,5 @@ export class CarTransactionsController {
     this.carChain = new BlockChain({ difficulty: 4 });
     const isValid = this.carChain.isBlockChainValid();
     return { isValid };
-  }
-  @Public()
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.blockService.findOne(id);
   }
 }

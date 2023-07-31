@@ -7,6 +7,7 @@ export interface BlockProperties {
   data: string;
   hash?: string;
   nonce?: number;
+  ref?: string;
 }
 
 export class Block {

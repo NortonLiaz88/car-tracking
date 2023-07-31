@@ -14,13 +14,20 @@ class Power {
 
 export class CreateCarTransactionDto {
   @ApiProperty()
-  power?: Power;
+  carRef: string;
+  @ApiProperty()
+  mileage: string;
+  @ApiProperty()
+  consumption: string;
+  @IsString()
+  maintenance?: string;
   @ApiProperty()
   @IsString()
-  consumption?: string;
+  system?: string;
   @ApiProperty()
-  @IsNumber()
-  mileage?: string;
+  @IsString()
+  local?: string;
   @ApiProperty()
-  maintenance?: any;
+  @IsString()
+  power?: Power;
 }

@@ -7,21 +7,18 @@ interface EncryptProperties {
 }
 
 export class Encrypt {
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
   constructor(private readonly props: EncryptProperties) {}
 
   private key = crypto.scryptSync(this.props.secretKey, 'salt', 24);
   private iv = Buffer.alloc(16, this.props.secretInitialVector);
-  private nonce = crypto.randomBytes(12);
-  private tag = null;
 
   public encryptData(data) {
     console.log(this.iv);
     const cipher = crypto.createCipheriv('aes-192-cbc', this.key, this.iv);
     console.log('RAPAZ', cipher);
-    let cypherData = cipher.update(JSON.stringify(data), 'utf-8', 'hex');
-    cypherData += cipher.final('hex');
-    return cypherData;
+    let cipherData = cipher.update(JSON.stringify(data), 'utf-8', 'hex');
+    cipherData += cipher.final('hex');
+    return cipherData;
   }
 
   // Decrypt data
